@@ -17,20 +17,26 @@ class AIService {
     async init() {
         if (this.textModel && this.visionModel) return;
 
-        console.log("⏳ Loading AI Models... (First run takes time)");
+        console.log("⏳ Loading AI Models (Quantized)...");
 
-        // 1. Load the Text Brain (For search queries)
-        this.tokenizer = await AutoTokenizer.from_pretrained('Xenova/clip-vit-base-patch32');
-        this.textModel = await CLIPTextModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32');
+        // ✨ MEMORY OPTIMIZATION: Force 'q8' (8-bit) quantization
+        // This reduces RAM usage by ~75% vs full precision
+        const options = { 
+            quantized: true,
+            dtype: 'q8' 
+        };
 
-        // 2. Load the Vision Brain (For image uploads)
-        this.processor = await AutoProcessor.from_pretrained('Xenova/clip-vit-base-patch32');
-        this.visionModel = await CLIPVisionModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32');
+        // 1. Text Brain
+        this.tokenizer = await AutoTokenizer.from_pretrained('Xenova/clip-vit-base-patch32', options);
+        this.textModel = await CLIPTextModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32', options);
+
+        // 2. Vision Brain
+        this.processor = await AutoProcessor.from_pretrained('Xenova/clip-vit-base-patch32', options);
+        this.visionModel = await CLIPVisionModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32', options);
 
         console.log("✅ AI Models Ready!");
     }
 
-    // Specific function for TEXT inputs
     async getTextEmbedding(text) {
         await this.init();
         const inputs = this.tokenizer([text], { padding: true, truncation: true });
@@ -38,7 +44,6 @@ class AIService {
         return Array.from(text_embeds.data);
     }
 
-    // Specific function for IMAGE inputs
     async getImageEmbedding(imageUrl) {
         await this.init();
         const image = await RawImage.read(imageUrl);

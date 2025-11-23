@@ -6,6 +6,8 @@ import memeRoutes from './routes/memeRoutes.js';
 
 dotenv.config();
 
+console.log("Allowed frontend:", process.env.FRONTEND_URL);
+
 const app = express();
 app.use(cors({
     origin: [process.env.FRONTEND_URL, "http://localhost:5173" ],

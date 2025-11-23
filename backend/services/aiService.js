@@ -17,22 +17,19 @@ class AIService {
     async init() {
         if (this.textModel && this.visionModel) return;
 
-        console.log("⏳ Loading AI Models (Quantized)...");
-
-        // ✨ MEMORY OPTIMIZATION: Force 'q8' (8-bit) quantization
-        // This reduces RAM usage by ~75% vs full precision
-        const options = { 
-            quantized: true,
-            dtype: 'q8' 
-        };
+        console.log("⏳ Loading AI Models (Optimized)...");
 
         // 1. Text Brain
-        this.tokenizer = await AutoTokenizer.from_pretrained('Xenova/clip-vit-base-patch32', options);
-        this.textModel = await CLIPTextModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32', options);
+        this.tokenizer = await AutoTokenizer.from_pretrained('Xenova/clip-vit-base-patch32');
+        this.textModel = await CLIPTextModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32', {
+            quantized: true
+        });
 
         // 2. Vision Brain
-        this.processor = await AutoProcessor.from_pretrained('Xenova/clip-vit-base-patch32', options);
-        this.visionModel = await CLIPVisionModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32', options);
+        this.processor = await AutoProcessor.from_pretrained('Xenova/clip-vit-base-patch32');
+        this.visionModel = await CLIPVisionModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32', {
+            quantized: true
+        });
 
         console.log("✅ AI Models Ready!");
     }
@@ -46,9 +43,18 @@ class AIService {
 
     async getImageEmbedding(imageUrl) {
         await this.init();
+        
+        // 1. Read Image
         const image = await RawImage.read(imageUrl);
-        const inputs = await this.processor(image);
-        const { image_embeds } = await this.visionModel(inputs);
+        
+        // 2. Process Image
+        // The processor returns an object like { pixel_values: Tensor, ... }
+        const image_inputs = await this.processor(image);
+        
+        // 3. Run Vision Model
+        // We explicitly pass the object which contains 'pixel_values'
+        const { image_embeds } = await this.visionModel(image_inputs);
+        
         return Array.from(image_embeds.data);
     }
 }

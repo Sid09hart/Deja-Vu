@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create a configured instance
 const api = axios.create({
-    baseURL: 'http://localhost:5000/api/memes', // Your Backend URL
+    baseURL: import.meta.env.VITE_BACKEND_URL, // Your Backend URL
 });
 
 export const fetchMemes = async (query = '') => {
